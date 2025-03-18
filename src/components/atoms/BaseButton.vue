@@ -1,5 +1,3 @@
-
-
 <script setup>
 import { defineProps, defineEmits } from 'vue'
 
@@ -7,7 +5,7 @@ const props = defineProps({
   variant: {
     type: String,
     default: 'primary',
-    validator: (value) => ['primary', 'secondary', 'danger'].includes(value)
+    validator: (value) => ['primary', 'outline', 'danger', ''].includes(value)
   },
   disabled: {
     type: Boolean,
@@ -19,45 +17,55 @@ defineEmits(['click'])
 </script>
 
 <template>
-  <button
-    :class="['base-button', `base-button--${props.variant}`]"
-    :disabled="props.disabled"
-    @click="$emit('click')"
-  >
-    <slot/>
+  <button :class="['base-button', `base-button--${props.variant}`]" :disabled="props.disabled" @click="$emit('click')">
+    <slot />
   </button>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 .base-button {
-  padding: 10px 20px;
+  width: 100%;
   border: none;
-  border-radius: 4px;
-  cursor: pointer;
+  border-radius: 0.5rem;
+  padding: 10px 20px;
   font-size: 16px;
-  transition: background-color 0.3s ease;
-}
+  transition: all 0.3s ease;
+  cursor: pointer;
 
-.base-button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
 
-.base-button--primary {
-  background-color: var(--color-primary);
-  color: white;
-}
+  :disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
 
-.base-button--primary:hover:not(:disabled) {
-  background-color: var(--color-primary-hover);
-}
+  &--primary {
+    background-color: var(--color-primary);
+    color: white;
+  }
 
-.base-button--danger {
-  background-color: var(--color-danger);
-  color: white;
-}
+  &--primary:hover:not(:disabled) {
+    background-color: var(--color-primary-hover);
+  }
 
-.base-button--danger:hover:not(:disabled) {
-  background-color: var(--color-danger-hover);
+  &--outline {
+    border: 1px solid var(--color-primary);
+    background-color: transparent;
+    color: var(--color-primary);
+  }
+
+  &--outline:hover:not(:disabled) {
+    border: 1px solid var(--color-primary-hover);
+    background-color: transparent;
+    color: var(--color-primary-hover);
+  }
+
+  &--danger {
+    background-color: var(--color-danger);
+    color: white;
+  }
+
+  &--danger:hover:not(:disabled) {
+    background-color: var(--color-danger-hover);
+  }
 }
 </style>
