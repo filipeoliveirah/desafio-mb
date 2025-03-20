@@ -15,3 +15,46 @@ export const formatCNPJ = (value) => {
 
   return formatted;
 };
+
+
+/**
+ * Validates if a string is a valid CNPJ
+ * @param {string}
+ * @returns {boolean}
+ *
+*/
+
+export const isValidCNPJ = (cnpj) => {
+  if (!cnpj) return false;
+
+  const cleanCNPJ = cnpj.replace(/[^\d]/g, '');
+
+  if (cleanCNPJ.length !== 14) return false;
+  if (/^(\d)\1+$/.test(cleanCNPJ)) return false;
+
+
+  let sum = 0;
+  let weight = 5;
+
+  for (let i = 0; i < 12; i++) {
+    sum += parseInt(cleanCNPJ.charAt(i)) * weight;
+    weight = weight === 2 ? 9 : weight - 1;
+  }
+
+  let digit = 11 - (sum % 11);
+  digit = digit >= 10 ? 0 : digit;
+  if (parseInt(cleanCNPJ.charAt(12)) !== digit) return false;
+
+
+  sum = 0;
+  weight = 6;
+  for (let i = 0; i < 13; i++) {
+    sum += parseInt(cleanCNPJ.charAt(i)) * weight;
+    weight = weight === 2 ? 9 : weight - 1;
+  }
+
+  digit = 11 - (sum % 11);
+  digit = digit >= 10 ? 0 : digit;
+
+  return parseInt(cleanCNPJ.charAt(13)) === digit;
+};
