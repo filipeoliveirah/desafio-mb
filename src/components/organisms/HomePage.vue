@@ -15,6 +15,5 @@ import FormStep from '@/components/molecules/FormSteps.vue'
   justify-content: space-around;
   align-items: center;
   height: 100vh;
-  background-color: black;
 }
 </style>
