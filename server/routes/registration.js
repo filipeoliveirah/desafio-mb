@@ -1,8 +1,9 @@
 const express = require('express');
+const path = require('path');
 const router = express.Router();
 
 router.get('/registration', (req, res) => {
-  res.sendFile(path.join(__dirname, '../../../client/dist/index.html'));
+  res.sendFile(path.join(__dirname, '../../client/dist/index.html'));
 });
 
 
@@ -13,7 +14,7 @@ router.post('/registration', (req, res) => {
     return res.status(400).json({ error: 'Nenhum dado recebido' });
   }
   
-
+  
   for (const key in formData) {
     if (!formData[key] && formData[key] !== 0) {
       return res.status(400).json({ 
