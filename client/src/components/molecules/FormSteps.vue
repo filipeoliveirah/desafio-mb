@@ -228,6 +228,10 @@ const validateStep = (step) => {
 }
 
 const handleSubmit = async () => {
+  if (currentStep.value !== 3) {
+    return;
+  }
+
   if (!validateStep(3)) return
 
   isSubmitting.value = true
