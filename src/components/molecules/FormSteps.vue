@@ -50,10 +50,9 @@ const handlePhone = (event, type) => {
 }
 
 const validateStep = (step) => {
-  errors.value = {}
 
   if (step === 0) {
-    if (!initialData.value.email) {
+    if (!initialData.value.email.trim()) {
       errors.value.email = 'E-mail é obrigatório'
       return false
     }
@@ -65,6 +64,7 @@ const validateStep = (step) => {
       errors.value.personType = 'Selecione o tipo de pessoa'
       return false
     }
+
     return true
   }
 
@@ -80,6 +80,14 @@ const validateStep = (step) => {
       }
       if (!isValidCPF(personTypePF.value.document)) {
         errors.value.document = 'CPF inválido'
+        return false
+      }
+      if (!personTypePF.value.birthday) {
+        errors.value.birthday = 'Data é obrigatória'
+        return false
+      }
+      if (!personTypePF.value.phone) {
+        errors.value.phone = 'Telefone é obrigatório'
         return false
       }
     } else {
@@ -132,7 +140,7 @@ const handleSubmit = async () => {
     }
 
     // Log data or submit to API
-    console.log('Form submitted:', formData)
+    // console.log('Form submitted:', formData)
 
     // toDo: implement API call
     // Mock API call
@@ -204,8 +212,8 @@ const nextStep = () => {
 
       <div class="step__column">
         <label for="name">Nome</label>
-        <input type="text" id="name" class="step__column--input" :class="{ 'error': errors.name }"
-          v-model="personTypePF.name" />
+        <input type="text" id="name" placeholder="Nome completo" class="step__column--input"
+          :class="{ 'error': errors.name }" v-model="personTypePF.name" />
         <span v-if="errors.name" class="error-message">{{ errors.name }}</span>
       </div>
 
@@ -219,12 +227,14 @@ const nextStep = () => {
       <div class="step__column">
         <label for="birthdayPF">Data de nascimento</label>
         <input type="date" id="birthdayPF" class="step__column--input" v-model="personTypePF.birthday" />
+        <span v-if="errors.birthday" class="error-message">{{ errors.birthday }}</span>
       </div>
 
       <div class="step__column">
         <label for="phonePF">Telefone</label>
         <input type="tel" id="phonePF" class="step__column--input" v-model="personTypePF.phone"
           @input="(e) => handlePhone(e, 'pf')" placeholder="(00) 00000-0000" />
+        <span v-if="errors.phone" class="error-message">{{ errors.phone }}</span>
       </div>
     </div>
 
