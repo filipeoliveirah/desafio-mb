@@ -12,10 +12,13 @@ import {
 import BaseButton from '@/components/atoms/BaseButton.vue'
 import PasswordToggle from '@/components/atoms/PasswordToggle.vue'
 
+import UserApplicationService from '@/services/application/UserApplicationService'
+const userApplicationService = new UserApplicationService()
+
+
 const currentStep = ref(0)
 const isSubmitting = ref(false)
 const errors = ref({})
-const showPassword = ref(false)
 
 const initialData = ref({
   email: '',
@@ -41,11 +44,6 @@ const credentials = ref({
   confirmPassword: ''
 })
 
-const togglePasswordVisibility = () => {
-  showPassword.value = !showPassword.value
-}
-
-
 const handleDocument = (event, type) => {
   if (type === 'pf') {
     personTypePF.value.document = formatCPF(event.target.value)
@@ -65,7 +63,8 @@ const handlePhone = (event, type) => {
 }
 
 const validateBirthday = () => {
-  errors.value.birthday = '';
+  errors.value.birthday = ''
+  errors.value.submit = ''
 
   if (!personTypePF.value.birthday) {
     errors.value.birthday = 'Data é obrigatória';
@@ -101,6 +100,7 @@ const validateStep = (step) => {
   if (step === 0 || currentStep.value === 3) {
     errors.value.email = ''
     errors.value.personType = ''
+    errors.value.submit = ''
 
     if (!initialData.value.email.trim()) {
       errors.value.email = 'E-mail é obrigatório'
@@ -125,6 +125,7 @@ const validateStep = (step) => {
     errors.value.phone = ''
     errors.value.socialName = ''
     errors.value.foundationDate = ''
+    errors.value.submit = ''
 
     if (initialData.value.personType === 'pf') {
       if (!personTypePF.value.name) {
@@ -202,6 +203,7 @@ const validateStep = (step) => {
 
     errors.value.password = ''
     errors.value.confirmPassword = ''
+    errors.value.submit = ''
 
     if (!credentials.value.password) {
       errors.value.password = 'Senha é obrigatória'
@@ -238,15 +240,12 @@ const handleSubmit = async () => {
       password: credentials.value.password
     }
 
-    // Log data or submit to API
-    // console.log('Form submitted:', formData)
+    const userData = await userApplicationService.sendUserData(formData)
 
-    // toDo: implement API call
-    // Mock API call
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    if (userData) {
+      alert('Usuário cadastrado com sucesso!')
+    }
 
-    // Show success or redirect
-    // alert('Cadastro realizado com sucesso!')
   } catch (error) {
     console.error('Error submitting form:', error)
     errors.value.submit = 'Erro ao enviar formulário. Tente novamente.'
@@ -254,6 +253,7 @@ const handleSubmit = async () => {
     isSubmitting.value = false
   }
 }
+
 
 const prevStep = () => {
   errors.value = {}
@@ -387,7 +387,9 @@ const nextStep = () => {
       </div>
 
       <div class="step">
+        <span v-if="errors.submit" class="error-message">{{ errors.submit }}</span>
         <div class="step__row mt-1">
+
           <BaseButton v-if="currentStep > 0" variant="outline" @click="prevStep()" aria-label="Voltar"
             :disabled="isSubmitting">
             Voltar
