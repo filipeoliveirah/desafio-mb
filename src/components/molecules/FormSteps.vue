@@ -1,7 +1,15 @@
 <script setup>
 import { ref } from 'vue'
+
+import {
+  formatCPF, isValidCPF,
+  formatCNPJ, isValidCNPJ,
+  formatPhone, isValidPhone,
+  isValidDate, isAtLeast18YearsOld,
+  containsNumbers, isValidEmail
+} from '@/utils/formatters/index'
+
 import BaseButton from '@/components/atoms/BaseButton.vue'
-import { formatCNPJ, formatCPF, isValidCPF, formatPhone, isValidEmail, isAtLeast18YearsOld, isValidDate, isValidPhone } from '@/utils/formatters/index'
 
 const currentStep = ref(0)
 const isSubmitting = ref(false)
@@ -106,11 +114,10 @@ const validateStep = (step) => {
   if (step === 1) {
     errors.value.name = ''
     errors.value.document = ''
-    errors.value.document = ''
     errors.value.birthday = ''
     errors.value.phone = ''
     errors.value.socialName = ''
-    errors.value.document = ''
+    errors.value.foundationDate = ''
 
     if (initialData.value.personType === 'pf') {
       if (!personTypePF.value.name) {
@@ -150,8 +157,24 @@ const validateStep = (step) => {
         errors.value.socialName = 'Razão Social é obrigatória'
         return false
       }
+
+      if (containsNumbers(personTypePJ.value.socialName)) {
+        errors.value.socialName = 'Razão Social não pode conter números'
+        return false
+      }
+
       if (!personTypePJ.value.document) {
         errors.value.document = 'CNPJ é obrigatório'
+        return false
+      }
+
+      if (!isValidCNPJ(personTypePJ.value.document)) {
+        errors.value.document = 'CNPJ inválido'
+        return false
+      }
+
+      if (!personTypePJ.value.foundationDate) {
+        errors.value.foundationDate = 'Data de abertura obrigatória'
         return false
       }
 
@@ -169,6 +192,10 @@ const validateStep = (step) => {
   }
 
   if (step === 2) {
+
+    errors.value.password = ''
+    errors.value.confirmPassword = ''
+
     if (!credentials.value.password) {
       errors.value.password = 'Senha é obrigatória'
       return false
@@ -243,154 +270,133 @@ const nextStep = () => {
       de 4
     </div>
 
-    <!-- First Step -->
-    <div class="step" v-show="currentStep === 0">
-      <h2>Seja bem-vindo(a)</h2>
+    <div class="steps">
+      <!-- First Step -->
+      <div class="step" v-show="currentStep === 0 || currentStep === 3">
+        <h2 v-if="currentStep !== 3">Seja bem-vindo(a)</h2>
+        <h2 v-else>Revise suas informações</h2>
 
-      <div class="step__column">
-        <label for="email">Endereço de e-mail</label>
-        <input type="email" id="email" class="step__column--input" :class="{ 'error': errors.email }"
-          v-model="initialData.email" autocomplete="email" />
-        <span v-if="errors.email" class="error-message">{{ errors.email }}</span>
-      </div>
-
-      <div class="step__column">
-        <div class="step__row">
-          <div class="step__row">
-            <input type="radio" id="pf" value="pf" class="step__column--radio" v-model="initialData.personType" />
-            <label for="pf">Pessoa física</label>
-          </div>
-
-          <div class="step__row">
-            <input type="radio" id="pj" value="pj" class="step__column--radio" v-model="initialData.personType" />
-            <label for="pj">Pessoa jurídica</label>
-          </div>
+        <div class="step__column">
+          <label for="email">Endereço de e-mail</label>
+          <input type="email" id="email" class="step__column--input" :class="{ 'error': errors.email }"
+            v-model="initialData.email" autocomplete="email" />
+          <span v-if="errors.email" class="error-message">{{ errors.email }}</span>
         </div>
-        <span v-if="errors.personType" class="error-message">{{ errors.personType }}</span>
-      </div>
-    </div>
 
-    <!-- Second Step if PF -->
-    <div class="step" v-show="currentStep === 1 && initialData.personType === 'pf'">
-      <h2>Pessoa Física</h2>
+        <div class="step__column" v-if="currentStep !== 3">
+          <div class="step__row">
+            <div class="step__row">
+              <input type="radio" id="pf" value="pf" class="step__column--radio" v-model="initialData.personType" />
+              <label for="pf">Pessoa física</label>
+            </div>
 
-      <div class="step__column">
-        <label for="name">Nome</label>
-        <input type="text" id="name" placeholder="Seu nome completo" class="step__column--input"
-          :class="{ 'error': errors.name }" v-model="personTypePF.name" />
-        <span v-if="errors.name" class="error-message">{{ errors.name }}</span>
-      </div>
-
-      <div class="step__column">
-        <label for="documentPF">CPF</label>
-        <input type="text" id="documentPF" class="step__column--input" :class="{ 'error': errors.document }"
-          v-model="personTypePF.document" @input="(e) => handleDocument(e, 'pf')" placeholder="000.000.000-00" />
-        <span v-if="errors.document" class="error-message">{{ errors.document }}</span>
+            <div class="step__row">
+              <input type="radio" id="pj" value="pj" class="step__column--radio" v-model="initialData.personType" />
+              <label for="pj">Pessoa jurídica</label>
+            </div>
+          </div>
+          <span v-if="errors.personType" class="error-message">{{ errors.personType }}</span>
+        </div>
       </div>
 
-      <div class="step__column">
-        <label for="birthdayPF">Data de nascimento</label>
-        <input type="date" id="birthdayPF" class="step__column--input" :class="{ 'error': errors.birthday }"
-          v-model="personTypePF.birthday" @change="validateBirthday" />
-        <span v-if="errors.birthday" class="error-message">{{ errors.birthday }}</span>
+      <!-- Second Step if PF -->
+      <div class="step" v-show="(currentStep === 1 || currentStep === 3) && initialData.personType === 'pf'">
+        <h2 v-if="currentStep !== 3">Pessoa Física</h2>
+
+        <div class="step__column">
+          <label for="name">Nome</label>
+          <input type="text" id="name" placeholder="Seu nome completo" class="step__column--input"
+            :class="{ 'error': errors.name }" v-model="personTypePF.name" />
+          <span v-if="errors.name" class="error-message">{{ errors.name }}</span>
+        </div>
+
+        <div class="step__column">
+          <label for="documentPF">CPF</label>
+          <input type="text" id="documentPF" class="step__column--input" :class="{ 'error': errors.document }"
+            v-model="personTypePF.document" @input="(e) => handleDocument(e, 'pf')" placeholder="000.000.000-00" />
+          <span v-if="errors.document" class="error-message">{{ errors.document }}</span>
+        </div>
+
+        <div class="step__column">
+          <label for="birthdayPF">Data de nascimento</label>
+          <input type="date" id="birthdayPF" class="step__column--input" :class="{ 'error': errors.birthday }"
+            v-model="personTypePF.birthday" @change="validateBirthday" />
+          <span v-if="errors.birthday" class="error-message">{{ errors.birthday }}</span>
+        </div>
+
+        <div class="step__column">
+          <label for="phonePF">Telefone</label>
+          <input type="tel" id="phonePF" class="step__column--input" v-model="personTypePF.phone"
+            @input="(e) => handlePhone(e, 'pf')" placeholder="(00) 00000-0000" />
+          <span v-if="errors.phone" class="error-message">{{ errors.phone }}</span>
+        </div>
       </div>
 
-      <div class="step__column">
-        <label for="phonePF">Telefone</label>
-        <input type="tel" id="phonePF" class="step__column--input" v-model="personTypePF.phone"
-          @input="(e) => handlePhone(e, 'pf')" placeholder="(00) 00000-0000" />
-        <span v-if="errors.phone" class="error-message">{{ errors.phone }}</span>
-      </div>
-    </div>
+      <!-- Second Step if PJ -->
+      <div class="step" v-show="(currentStep === 1 || currentStep === 3) && initialData.personType === 'pj'">
+        <h2 v-if="currentStep !== 3">Pessoa Jurídica</h2>
 
-    <!-- Second Step if PJ -->
-    <div class="step" v-show="currentStep === 1 && initialData.personType === 'pj'">
-      <h2>Pessoa Jurídica</h2>
+        <div class="step__column">
+          <label for="socialName">Razão Social</label>
+          <input type="text" id="socialName" placeholder="Preencha completamente" class="step__column--input"
+            :class="{ 'error': errors.socialName }" v-model="personTypePJ.socialName" />
+          <span v-if="errors.socialName" class="error-message">{{ errors.socialName }}</span>
+        </div>
 
-      <div class="step__column">
-        <label for="socialName">Razão Social</label>
-        <input type="text" id="socialName" class="step__column--input" :class="{ 'error': errors.socialName }"
-          v-model="personTypePJ.socialName" />
-        <span v-if="errors.socialName" class="error-message">{{ errors.socialName }}</span>
-      </div>
+        <div class="step__column">
+          <label for="documentPJ">CNPJ</label>
+          <input type="text" id="documentPJ" class="step__column--input" :class="{ 'error': errors.document }"
+            v-model="personTypePJ.document" @input="(e) => handleDocument(e, 'pj')" placeholder="00.000.000/0000-00" />
+          <span v-if="errors.document" class="error-message">{{ errors.document }}</span>
+        </div>
 
-      <div class="step__column">
-        <label for="documentPJ">CNPJ</label>
-        <input type="text" id="documentPJ" class="step__column--input" :class="{ 'error': errors.document }"
-          v-model="personTypePJ.document" @input="(e) => handleDocument(e, 'pj')" placeholder="00.000.000/0000-00" />
-        <span v-if="errors.document" class="error-message">{{ errors.document }}</span>
-      </div>
+        <div class="step__column">
+          <label for="foundationDate">Data de abertura</label>
+          <input type="date" id="foundationDate" class="step__column--input" v-model="personTypePJ.foundationDate" />
+          <span v-if="errors.foundationDate" class="error-message">{{ errors.foundationDate }}</span>
+        </div>
 
-      <div class="step__column">
-        <label for="foundationDate">Data de abertura</label>
-        <input type="date" id="foundationDate" class="step__column--input" v-model="personTypePJ.foundationDate" />
-      </div>
-
-      <div class="step__column">
-        <label for="phonePJ">Telefone</label>
-        <input type="tel" id="phonePJ" class="step__column--input" :class="{ 'error': errors.phone }"
-          v-model="personTypePJ.phone" @input="(e) => handlePhone(e, 'pj')" placeholder="(00) 00000-0000" />
-        <span v-if="errors.phone" class="error-message">{{ errors.phone }}</span>
-      </div>
-    </div>
-
-    <!-- Third Step -->
-    <div class="step" v-show="currentStep === 2">
-      <h2>Senha de acesso</h2>
-
-      <div class="step__column">
-        <label for="password">Sua senha</label>
-        <input type="password" id="password" class="step__column--input" :class="{ 'error': errors.password }"
-          v-model="credentials.password" autocomplete="new-password" />
-        <span v-if="errors.password" class="error-message">{{ errors.password }}</span>
+        <div class="step__column">
+          <label for="phonePJ">Telefone</label>
+          <input type="tel" id="phonePJ" class="step__column--input" v-model="personTypePJ.phone"
+            @input="(e) => handlePhone(e, 'pj')" placeholder="(00) 00000-0000" />
+          <span v-if="errors.phone" class="error-message">{{ errors.phone }}</span>
+        </div>
       </div>
 
-      <div class="step__column">
-        <label for="confirmPassword">Confirme sua senha</label>
-        <input type="password" id="confirmPassword" class="step__column--input"
-          :class="{ 'error': errors.confirmPassword }" v-model="credentials.confirmPassword"
-          autocomplete="new-password" />
-        <span v-if="errors.confirmPassword" class="error-message">{{ errors.confirmPassword }}</span>
-      </div>
-    </div>
+      <!-- Third Step -->
+      <div class="step" v-show="currentStep === 2 || currentStep === 3">
+        <h2 v-if="currentStep !== 3">Senha de acesso</h2>
 
-    <!-- Last Step -->
-    <div class="step" v-show="currentStep === 3">
-      <h2>Revise suas informações</h2>
+        <div class="step__column">
+          <label for="password">Sua senha</label>
+          <input type="password" id="password" class="step__column--input" :class="{ 'error': errors.password }"
+            v-model="credentials.password" autocomplete="new-password" />
+          <span v-if="errors.password" class="error-message">{{ errors.password }}</span>
+        </div>
 
-      <div class="review-data">
-        <p><strong>E-mail:</strong> {{ initialData.email }}</p>
-
-        <template v-if="initialData.personType === 'pf'">
-          <p><strong>Nome:</strong> {{ personTypePF.name }}</p>
-          <p><strong>CPF:</strong> {{ personTypePF.document }}</p>
-          <p v-if="personTypePF.birthday"><strong>Data de nascimento:</strong> {{ personTypePF.birthday }}</p>
-          <p v-if="personTypePF.phone"><strong>Telefone:</strong> {{ personTypePF.phone }}</p>
-        </template>
-
-        <template v-else>
-          <p><strong>Razão Social:</strong> {{ personTypePJ.socialName }}</p>
-          <p><strong>CNPJ:</strong> {{ personTypePJ.document }}</p>
-          <p v-if="personTypePJ.foundationDate"><strong>Data de abertura:</strong> {{ personTypePJ.foundationDate }}</p>
-          <p v-if="personTypePJ.phone"><strong>Telefone:</strong> {{ personTypePJ.phone }}</p>
-        </template>
+        <div class="step__column" v-if="currentStep !== 3">
+          <label for="confirmPassword">Confirme sua senha</label>
+          <input type="password" id="confirmPassword" class="step__column--input"
+            :class="{ 'error': errors.confirmPassword }" v-model="credentials.confirmPassword"
+            autocomplete="new-password" />
+          <span v-if="errors.confirmPassword" class="error-message">{{ errors.confirmPassword }}</span>
+        </div>
       </div>
 
-      <span v-if="errors.submit" class="error-message">{{ errors.submit }}</span>
-    </div>
-
-    <div class="step">
-      <div class="step__row mt-1">
-        <BaseButton v-if="currentStep > 0" variant="outline" @click="prevStep()" aria-label="Voltar"
-          :disabled="isSubmitting">
-          Voltar
-        </BaseButton>
-        <BaseButton v-if="currentStep < 3" @click="nextStep()" aria-label="Continuar" :disabled="isSubmitting">
-          Continuar
-        </BaseButton>
-        <BaseButton v-if="currentStep === 3" @click="handleSubmit" :disabled="isSubmitting" aria-label="Cadastrar">
-          {{ isSubmitting ? 'Enviando...' : 'Cadastrar' }}
-        </BaseButton>
+      <div class="step">
+        <div class="step__row mt-1">
+          <BaseButton v-if="currentStep > 0" variant="outline" @click="prevStep()" aria-label="Voltar"
+            :disabled="isSubmitting">
+            Voltar
+          </BaseButton>
+          <BaseButton v-if="currentStep < 3" @click="nextStep()" aria-label="Continuar" :disabled="isSubmitting">
+            Continuar
+          </BaseButton>
+          <BaseButton v-if="currentStep === 3" @click="handleSubmit" :disabled="isSubmitting" aria-label="Cadastrar">
+            {{ isSubmitting ? 'Enviando...' : 'Cadastrar' }}
+          </BaseButton>
+        </div>
       </div>
     </div>
   </form>
@@ -418,10 +424,17 @@ const nextStep = () => {
     }
   }
 
-  .step {
+  .steps {
     display: flex;
     flex-direction: column;
     max-width: 20rem;
+    gap: 1rem;
+    width: 100%;
+  }
+
+  .step {
+    display: flex;
+    flex-direction: column;
     gap: 1rem;
     width: 100%;
 
