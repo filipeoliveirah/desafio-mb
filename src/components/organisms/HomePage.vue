@@ -14,6 +14,8 @@ import FormStep from '@/components/molecules/FormSteps.vue'
   flex-direction: column;
   justify-content: space-around;
   align-items: center;
-  height: 100vh;
+  min-height: 100vh;
+  padding-top: 2rem;
+  padding-bottom: 2rem;
 }
 </style>
