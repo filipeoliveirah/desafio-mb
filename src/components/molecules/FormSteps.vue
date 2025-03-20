@@ -445,6 +445,7 @@ const nextStep = () => {
       display: flex;
       width: 100%;
       gap: 0.5rem;
+      max-width: 19rem;
 
       &--input {
         &.error {
