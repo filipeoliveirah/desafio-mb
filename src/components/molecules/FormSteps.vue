@@ -98,7 +98,7 @@ const validateBirthday = () => {
 
 const validateStep = (step) => {
 
-  if (step === 0) {
+  if (step === 0 || currentStep.value === 3) {
     errors.value.email = ''
     errors.value.personType = ''
 
@@ -118,7 +118,7 @@ const validateStep = (step) => {
     return true
   }
 
-  if (step === 1) {
+  if (step === 1 || currentStep.value === 3) {
     errors.value.name = ''
     errors.value.document = ''
     errors.value.birthday = ''
@@ -198,7 +198,7 @@ const validateStep = (step) => {
     return true
   }
 
-  if (step === 2) {
+  if (step === 2 || currentStep.value === 3) {
 
     errors.value.password = ''
     errors.value.confirmPassword = ''
@@ -286,7 +286,7 @@ const nextStep = () => {
         <div class="step__column">
           <label for="email">Endereço de e-mail</label>
           <input type="email" id="email" class="step__column--input" :class="{ 'error': errors.email }"
-            v-model="initialData.email" autocomplete="email" />
+            v-model="initialData.email" placeholder="Digite seu e-mail" autocomplete="email" />
           <span v-if="errors.email" class="error-message">{{ errors.email }}</span>
         </div>
 
