@@ -10,10 +10,12 @@ import {
 } from '@/utils/formatters/index'
 
 import BaseButton from '@/components/atoms/BaseButton.vue'
+import PasswordToggle from '@/components/atoms/PasswordToggle.vue'
 
 const currentStep = ref(0)
 const isSubmitting = ref(false)
 const errors = ref({})
+const showPassword = ref(false)
 
 const initialData = ref({
   email: '',
@@ -38,6 +40,11 @@ const credentials = ref({
   password: '',
   confirmPassword: ''
 })
+
+const togglePasswordVisibility = () => {
+  showPassword.value = !showPassword.value
+}
+
 
 const handleDocument = (event, type) => {
   if (type === 'pf') {
@@ -365,22 +372,17 @@ const nextStep = () => {
       </div>
 
       <!-- Third Step -->
-      <div class="step" v-show="currentStep === 2 || currentStep === 3">
+      <div class="step" v-show="currentStep === 2 || currentStep == 3">
         <h2 v-if="currentStep !== 3">Senha de acesso</h2>
 
         <div class="step__column">
-          <label for="password">Sua senha</label>
-          <input type="password" id="password" class="step__column--input" :class="{ 'error': errors.password }"
-            v-model="credentials.password" autocomplete="new-password" />
-          <span v-if="errors.password" class="error-message">{{ errors.password }}</span>
+          <PasswordToggle id="password" label="Sua senha" v-model="credentials.password" :error="errors.password"
+            autocomplete="new-password" placeholder="Digite sua senha" />
         </div>
 
         <div class="step__column" v-if="currentStep !== 3">
-          <label for="confirmPassword">Confirme sua senha</label>
-          <input type="password" id="confirmPassword" class="step__column--input"
-            :class="{ 'error': errors.confirmPassword }" v-model="credentials.confirmPassword"
-            autocomplete="new-password" />
-          <span v-if="errors.confirmPassword" class="error-message">{{ errors.confirmPassword }}</span>
+          <PasswordToggle id="confirmPassword" label="Confirme sua senha" v-model="credentials.confirmPassword"
+            :error="errors.confirmPassword" autocomplete="new-password" placeholder="Digite novamente sua senha" />
         </div>
       </div>
 
@@ -413,7 +415,7 @@ const nextStep = () => {
 
   .stepper {
     width: 100%;
-    max-width: 20rem;
+    max-width: 25rem;
     text-align: center;
     display: flex;
     gap: 0.5rem;
@@ -427,7 +429,7 @@ const nextStep = () => {
   .steps {
     display: flex;
     flex-direction: column;
-    max-width: 20rem;
+    max-width: 25rem;
     gap: 1rem;
     width: 100%;
   }
@@ -445,12 +447,6 @@ const nextStep = () => {
       gap: 0.5rem;
 
       &--input {
-        padding: 0.5rem;
-        border-radius: var(--border-radius);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        background-color: rgba(255, 255, 255, 0.1);
-        color: var(--color-content);
-
         &.error {
           border-color: var(--color-danger);
         }
