@@ -1,7 +1,7 @@
 <script setup>
 import { ref } from 'vue'
 import BaseButton from '@/components/atoms/BaseButton.vue'
-import { formatCNPJ, formatCPF, isValidCPF, formatPhone, isValidEmail } from '@/utils/formatters/index'
+import { formatCNPJ, formatCPF, isValidCPF, formatPhone, isValidEmail, isAtLeast18YearsOld, isValidDate, isValidPhone } from '@/utils/formatters/index'
 
 const currentStep = ref(0)
 const isSubmitting = ref(false)
@@ -35,7 +35,7 @@ const handleDocument = (event, type) => {
   if (type === 'pf') {
     personTypePF.value.document = formatCPF(event.target.value)
   } else {
-    personTypePF.value.document = formatCNPJ(event.target.value)
+    personTypePJ.value.document = formatCNPJ(event.target.value)
   }
 }
 
@@ -49,9 +49,44 @@ const handlePhone = (event, type) => {
   }
 }
 
+const validateBirthday = () => {
+  errors.value.birthday = '';
+
+  if (!personTypePF.value.birthday) {
+    errors.value.birthday = 'Data é obrigatória';
+    return false;
+  }
+
+  // Parse the date to check for year length
+  const parts = personTypePF.value.birthday.split('-');
+  if (parts.length === 3) {
+    const year = parts[0];
+    // Check if year has more than 4 digits
+    if (year.length !== 4 || isNaN(parseInt(year))) {
+      errors.value.birthday = 'Ano inválido';
+      return false;
+    }
+  }
+
+  if (!isValidDate(personTypePF.value.birthday)) {
+    errors.value.birthday = 'Data inválida';
+    return false;
+  }
+
+  if (!isAtLeast18YearsOld(personTypePF.value.birthday)) {
+    errors.value.birthday = 'Você deve ter pelo menos 18 anos';
+    return false;
+  }
+
+  return true;
+};
+
 const validateStep = (step) => {
 
   if (step === 0) {
+    errors.value.email = ''
+    errors.value.personType = ''
+
     if (!initialData.value.email.trim()) {
       errors.value.email = 'E-mail é obrigatório'
       return false
@@ -69,25 +104,45 @@ const validateStep = (step) => {
   }
 
   if (step === 1) {
+    errors.value.name = ''
+    errors.value.document = ''
+    errors.value.document = ''
+    errors.value.birthday = ''
+    errors.value.phone = ''
+    errors.value.socialName = ''
+    errors.value.document = ''
+
     if (initialData.value.personType === 'pf') {
       if (!personTypePF.value.name) {
         errors.value.name = 'Nome é obrigatório'
         return false
       }
+
       if (!personTypePF.value.document) {
         errors.value.document = 'CPF é obrigatório'
         return false
       }
+
       if (!isValidCPF(personTypePF.value.document)) {
         errors.value.document = 'CPF inválido'
         return false
       }
+
       if (!personTypePF.value.birthday) {
-        errors.value.birthday = 'Data é obrigatória'
-        return false
+        errors.value.birthday = 'Data é obrigatória';
+        return false;
+      } else {
+        const isValid = validateBirthday();
+        if (!isValid) return false;
       }
+
       if (!personTypePF.value.phone) {
         errors.value.phone = 'Telefone é obrigatório'
+        return false
+      }
+
+      if (!isValidPhone(personTypePF.value.phone)) {
+        errors.value.phone = 'Formato de telefone inválido'
         return false
       }
     } else {
@@ -97,6 +152,16 @@ const validateStep = (step) => {
       }
       if (!personTypePJ.value.document) {
         errors.value.document = 'CNPJ é obrigatório'
+        return false
+      }
+
+      if (!personTypePJ.value.phone) {
+        errors.value.phone = 'Telefone é obrigatório'
+        return false
+      }
+
+      if (!isValidPhone(personTypePJ.value.phone)) {
+        errors.value.phone = 'Formato de telefone inválido'
         return false
       }
     }
@@ -190,14 +255,13 @@ const nextStep = () => {
       </div>
 
       <div class="step__column">
-        <span>Tipo de pessoa</span>
         <div class="step__row">
-          <div>
+          <div class="step__row">
             <input type="radio" id="pf" value="pf" class="step__column--radio" v-model="initialData.personType" />
             <label for="pf">Pessoa física</label>
           </div>
 
-          <div>
+          <div class="step__row">
             <input type="radio" id="pj" value="pj" class="step__column--radio" v-model="initialData.personType" />
             <label for="pj">Pessoa jurídica</label>
           </div>
@@ -212,7 +276,7 @@ const nextStep = () => {
 
       <div class="step__column">
         <label for="name">Nome</label>
-        <input type="text" id="name" placeholder="Nome completo" class="step__column--input"
+        <input type="text" id="name" placeholder="Seu nome completo" class="step__column--input"
           :class="{ 'error': errors.name }" v-model="personTypePF.name" />
         <span v-if="errors.name" class="error-message">{{ errors.name }}</span>
       </div>
@@ -226,7 +290,8 @@ const nextStep = () => {
 
       <div class="step__column">
         <label for="birthdayPF">Data de nascimento</label>
-        <input type="date" id="birthdayPF" class="step__column--input" v-model="personTypePF.birthday" />
+        <input type="date" id="birthdayPF" class="step__column--input" :class="{ 'error': errors.birthday }"
+          v-model="personTypePF.birthday" @change="validateBirthday" />
         <span v-if="errors.birthday" class="error-message">{{ errors.birthday }}</span>
       </div>
 
@@ -263,8 +328,9 @@ const nextStep = () => {
 
       <div class="step__column">
         <label for="phonePJ">Telefone</label>
-        <input type="tel" id="phonePJ" class="step__column--input" v-model="personTypePJ.phone"
-          @input="(e) => handlePhone(e, 'pj')" placeholder="(00) 00000-0000" />
+        <input type="tel" id="phonePJ" class="step__column--input" :class="{ 'error': errors.phone }"
+          v-model="personTypePJ.phone" @input="(e) => handlePhone(e, 'pj')" placeholder="(00) 00000-0000" />
+        <span v-if="errors.phone" class="error-message">{{ errors.phone }}</span>
       </div>
     </div>
 
@@ -314,7 +380,7 @@ const nextStep = () => {
     </div>
 
     <div class="step">
-      <div class="step__row">
+      <div class="step__row mt-1">
         <BaseButton v-if="currentStep > 0" variant="outline" @click="prevStep()" aria-label="Voltar"
           :disabled="isSubmitting">
           Voltar
@@ -338,13 +404,13 @@ const nextStep = () => {
   justify-content: start;
   align-items: center;
   color: var(--color-content);
-  gap: 1rem;
 
   .stepper {
     width: 100%;
     max-width: 20rem;
     text-align: center;
-    margin-bottom: 1rem;
+    display: flex;
+    gap: 0.5rem;
 
     &__current {
       font-weight: bold;
@@ -364,10 +430,6 @@ const nextStep = () => {
       display: flex;
       width: 100%;
       gap: 0.5rem;
-
-      &--radio {
-        margin-right: 0.5rem;
-      }
 
       &--input {
         padding: 0.5rem;
@@ -389,7 +451,7 @@ const nextStep = () => {
 
     &__row {
       flex-direction: row;
-      justify-content: space-between;
+      align-items: center;
     }
 
     &__column {
